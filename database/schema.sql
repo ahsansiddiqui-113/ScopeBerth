@@ -114,3 +114,23 @@ CREATE TABLE IF NOT EXISTS invoices (
 CREATE INDEX IF NOT EXISTS idx_org_members_user ON organization_members(user_id);
 CREATE INDEX IF NOT EXISTS idx_projects_org_client ON projects(organization_id, client_user_id);
 CREATE INDEX IF NOT EXISTS idx_invoices_org_status ON invoices(organization_id, status);
+
+-- ---- Phase 2 ----
+-- 9. Milestones (ordered stages of a project; locked once their deliverable is approved)
+CREATE TABLE IF NOT EXISTS milestones (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    position INT NOT NULL DEFAULT 0,
+    status VARCHAR(30) NOT NULL DEFAULT 'pending', -- 'pending', 'awaiting_approval', 'approved'
+    due_date DATE,
+    approved_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_milestones_project ON milestones(project_id, position);
+
+ALTER TABLE deliverables ADD COLUMN IF NOT EXISTS milestone_id UUID REFERENCES milestones(id) ON DELETE SET NULL;
+ALTER TABLE deliverables ADD COLUMN IF NOT EXISTS uploaded_by UUID REFERENCES users(id);
+CREATE INDEX IF NOT EXISTS idx_deliverables_project ON deliverables(project_id);

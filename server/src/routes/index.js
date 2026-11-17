@@ -6,6 +6,9 @@ const tenantContext = require('../middleware/tenantContext');
 const { requireRole } = tenantContext;
 const auth = require('../controllers/authController');
 const org = require('../controllers/orgController');
+const clients = require('../controllers/clientController');
+const projects = require('../controllers/projectController');
+const deliv = require('../controllers/deliverableController');
 
 const router = express.Router();
 
@@ -24,6 +27,7 @@ router.post('/auth/signup', authLimiter, h(auth.signup));
 router.post('/auth/login', authLimiter, h(auth.login));
 router.post('/auth/magic-link', authLimiter, h(auth.requestMagicLink));
 router.post('/auth/magic-link/verify', authLimiter, h(auth.verifyMagicLink));
+router.get('/public/orgs/:slug', h(org.getPublicBranding));
 router.get('/auth/me', authenticate, h(auth.me));
 
 // Organizations
@@ -31,5 +35,30 @@ router.post('/orgs', authenticate, h(org.createOrg));
 router.get('/orgs', authenticate, h(org.listMyOrgs));
 router.get('/orgs/current', authenticate, tenantContext, h(org.getCurrentOrg));
 router.patch('/orgs/current', authenticate, tenantContext, requireRole('owner'), h(org.updateCurrentOrg));
+
+// Everything below is tenant-scoped: authenticated + member of x-organization-id.
+const tenant = [authenticate, tenantContext];
+const staff = requireRole('owner', 'staff');
+
+// Clients (CRM + invites)
+router.post('/clients', ...tenant, staff, h(clients.inviteClient));
+router.get('/clients', ...tenant, staff, h(clients.listClients));
+router.post('/clients/:userId/resend-invite', ...tenant, staff, h(clients.resendInvite));
+
+// Projects & milestones (clients see only their own projects; enforced in loadProject/listProjects)
+router.post('/projects', ...tenant, staff, h(projects.createProject));
+router.get('/projects', ...tenant, h(projects.listProjects));
+router.get('/projects/:id', ...tenant, h(projects.getProject));
+router.patch('/projects/:id', ...tenant, staff, h(projects.updateProject));
+router.post('/projects/:id/milestones', ...tenant, staff, h(projects.createMilestone));
+router.patch('/milestones/:id', ...tenant, staff, h(projects.updateMilestone));
+
+// Deliverables
+router.post('/projects/:id/deliverables/upload-url', ...tenant, staff, h(deliv.createUploadUrl));
+router.post('/projects/:id/deliverables', ...tenant, staff, h(deliv.createDeliverable));
+router.get('/projects/:id/deliverables', ...tenant, h(deliv.listDeliverables));
+router.get('/deliverables/:id/download', ...tenant, h(deliv.downloadDeliverable));
+router.post('/deliverables/:id/approve', ...tenant, h(deliv.approveDeliverable));
+router.post('/deliverables/:id/request-changes', ...tenant, h(deliv.requestChanges));
 
 module.exports = router;

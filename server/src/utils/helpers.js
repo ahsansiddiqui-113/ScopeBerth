@@ -18,6 +18,9 @@ function signSession(user) {
   });
 }
 
+const isUuid = (s) =>
+  typeof s === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+
 const publicUser = (u) => ({ id: u.id, email: u.email, fullName: u.full_name });
 
 const slugify = (s) =>
@@ -37,5 +40,5 @@ class HttpError extends Error {
 
 module.exports = {
   asyncHandler, normalizeEmail, isEmail, sha256, newMagicToken,
-  signSession, publicUser, slugify, HttpError,
+  signSession, publicUser, isUuid, slugify, HttpError,
 };

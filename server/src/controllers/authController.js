@@ -1,11 +1,9 @@
 const bcrypt = require('bcryptjs');
 const pool = require('../config/db');
-const { sendMagicLink } = require('../utils/mailer');
+const { issueMagicLink } = require('../utils/magic');
 const {
-  normalizeEmail, isEmail, sha256, newMagicToken, signSession, publicUser, HttpError,
+  normalizeEmail, isEmail, sha256, signSession, publicUser, HttpError,
 } = require('../utils/helpers');
-
-const MAGIC_TTL_MINUTES = 15;
 
 // POST /api/auth/signup  { email, password, fullName }
 // Creates a user only; they create/join a workspace via POST /api/orgs.
@@ -63,18 +61,7 @@ exports.requestMagicLink = async (req, res) => {
   if (!isEmail(email)) throw new HttpError(400, 'A valid email is required');
 
   const { rows } = await pool.query('SELECT id FROM users WHERE LOWER(email) = $1', [email]);
-  if (rows.length > 0) {
-    const token = newMagicToken();
-    await pool.query(
-      `UPDATE users
-          SET magic_token_hash = $1,
-              magic_token_expires = NOW() + ($2 || ' minutes')::interval
-        WHERE id = $3`,
-      [sha256(token), String(MAGIC_TTL_MINUTES), rows[0].id]
-    );
-    const base = process.env.CLIENT_URL || 'http://localhost:3000';
-    await sendMagicLink(email, `${base}/portal-login?token=${token}`);
-  }
+  if (rows.length > 0) await issueMagicLink(rows[0].id, email);
   res.json({ message: 'If that email has an account, a sign-in link is on its way.' });
 };
 

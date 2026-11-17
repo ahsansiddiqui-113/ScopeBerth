@@ -84,3 +84,16 @@ exports.updateCurrentOrg = async (req, res) => {
   );
   res.json({ organization: rows[0] });
 };
+
+// GET /api/public/orgs/:slug  — unauthenticated branding for the white-labeled portal / login page.
+// Exposes only presentation fields; white-label flag lets the client hide "Powered by ServiceFlow".
+exports.getPublicBranding = async (req, res) => {
+  const { rows } = await pool.query(
+    `SELECT name, slug, logo_url AS "logoUrl", brand_color AS "brandColor",
+            (plan_tier = 'agency' AND subscription_status = 'active') AS "whiteLabel"
+       FROM organizations WHERE slug = $1`,
+    [String(req.params.slug).toLowerCase()]
+  );
+  if (rows.length === 0) throw new HttpError(404, 'Workspace not found');
+  res.json({ organization: rows[0] });
+};
