@@ -1,7 +1,8 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { api, ApiError, Branding, clearToken, getToken, Me } from '../lib/api';
 
 type PortalCtx = { branding: Branding; orgId: string; user: Me['user'] };
@@ -21,6 +22,7 @@ export function hexToRgb(hex: string): string {
 /** Loads org branding (public), applies its color, then guards the portal behind a signed-in membership. */
 export function PortalProvider({ slug, children }: { slug: string; children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [branding, setBranding] = useState<Branding | null>(null);
   const [ctx, setCtx] = useState<PortalCtx | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -92,6 +94,25 @@ export function PortalProvider({ slug, children }: { slug: string; children: Rea
           )}
         </div>
       </header>
+
+      {ctx && (
+        <nav className="border-b border-slate-200 bg-white" aria-label="Portal">
+          <div className="mx-auto flex max-w-5xl gap-6 px-6">
+            {[['Projects', ''], ['Proposals', '/proposals'], ['Invoices', '/invoices']].map(([label, href]) => {
+              const full = `/portal/${slug}${href}`;
+              const active = href === '' ? pathname === full || pathname.startsWith(`${full}/projects`) : pathname.startsWith(full);
+              return (
+                <Link
+                  key={label} href={full} aria-current={active ? 'page' : undefined}
+                  className={`-mb-px border-b-2 py-3 text-sm font-medium ${active ? 'border-brand text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+                >
+                  {label}
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      )}
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">
         {ctx ? <Ctx.Provider value={ctx}>{children}</Ctx.Provider> : <p className="text-slate-500">Loading…</p>}

@@ -50,3 +50,19 @@ export type Deliverable = {
   status: 'pending_approval' | 'approved' | 'changes_requested'; clientFeedback: string | null;
   approvedAt: string | null; createdAt: string;
 };
+
+export type LineItem = { name: string; qty: number; price: number };
+export type Proposal = {
+  id: string; title: string; scope: string | null; timeline: string | null; lineItems: LineItem[];
+  totalAmount: string; currency: string; depositPercent: number;
+  status: 'draft' | 'sent' | 'signed' | 'declined';
+  signedByName: string | null; signedAt: string | null; sentAt: string | null; createdAt: string;
+};
+export type Invoice = {
+  id: string; invoiceNumber: string; projectId: string | null; projectTitle: string | null;
+  amount: string; currency: string; status: 'unpaid' | 'paid' | 'overdue';
+  dueDate: string; description: string | null; paymentUrl: string | null; paidAt: string | null;
+};
+
+export const money = (amount: string | number, currency = 'USD') =>
+  new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(Number(amount));

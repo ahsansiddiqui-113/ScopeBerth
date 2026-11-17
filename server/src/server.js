@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const routes = require('./routes');
+const { sweepOverdue } = require('./controllers/invoiceController');
 
 for (const key of ['DATABASE_URL', 'JWT_SECRET']) {
   if (!process.env[key]) {
@@ -37,6 +38,10 @@ app.use((err, req, res, next) => {
 const port = process.env.PORT || 4000;
 if (require.main === module) {
   app.listen(port, () => console.log(`ServiceFlow API listening on :${port}`));
+  // Mark unpaid invoices past due as overdue (on boot, then hourly).
+  const sweep = () => sweepOverdue().catch((e) => console.error('Overdue sweep failed:', e.message));
+  sweep();
+  setInterval(sweep, 60 * 60 * 1000).unref();
 }
 
 module.exports = app;

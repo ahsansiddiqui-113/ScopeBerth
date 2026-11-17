@@ -134,3 +134,13 @@ CREATE INDEX IF NOT EXISTS idx_milestones_project ON milestones(project_id, posi
 ALTER TABLE deliverables ADD COLUMN IF NOT EXISTS milestone_id UUID REFERENCES milestones(id) ON DELETE SET NULL;
 ALTER TABLE deliverables ADD COLUMN IF NOT EXISTS uploaded_by UUID REFERENCES users(id);
 CREATE INDEX IF NOT EXISTS idx_deliverables_project ON deliverables(project_id);
+
+-- ---- Phase 3 ----
+ALTER TABLE proposals ADD COLUMN IF NOT EXISTS scope TEXT;
+ALTER TABLE proposals ADD COLUMN IF NOT EXISTS timeline TEXT;
+ALTER TABLE proposals ADD COLUMN IF NOT EXISTS deposit_percent INT NOT NULL DEFAULT 50
+    CHECK (deposit_percent BETWEEN 1 AND 100);
+ALTER TABLE proposals ADD COLUMN IF NOT EXISTS sent_at TIMESTAMPTZ;
+ALTER TABLE proposals ADD COLUMN IF NOT EXISTS declined_at TIMESTAMPTZ;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS description TEXT;
+CREATE INDEX IF NOT EXISTS idx_proposals_org_client ON proposals(organization_id, client_user_id);

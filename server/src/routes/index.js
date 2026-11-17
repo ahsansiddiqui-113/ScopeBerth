@@ -9,6 +9,8 @@ const org = require('../controllers/orgController');
 const clients = require('../controllers/clientController');
 const projects = require('../controllers/projectController');
 const deliv = require('../controllers/deliverableController');
+const proposals = require('../controllers/proposalController');
+const invoices = require('../controllers/invoiceController');
 
 const router = express.Router();
 
@@ -60,5 +62,20 @@ router.get('/projects/:id/deliverables', ...tenant, h(deliv.listDeliverables));
 router.get('/deliverables/:id/download', ...tenant, h(deliv.downloadDeliverable));
 router.post('/deliverables/:id/approve', ...tenant, h(deliv.approveDeliverable));
 router.post('/deliverables/:id/request-changes', ...tenant, h(deliv.requestChanges));
+
+// Proposals (clients only ever see non-draft proposals addressed to them)
+router.post('/proposals', ...tenant, staff, h(proposals.createProposal));
+router.get('/proposals', ...tenant, h(proposals.listProposals));
+router.get('/proposals/:id', ...tenant, h(proposals.getProposal));
+router.patch('/proposals/:id', ...tenant, staff, h(proposals.updateProposal));
+router.post('/proposals/:id/send', ...tenant, staff, h(proposals.sendProposal));
+router.post('/proposals/:id/sign', ...tenant, h(proposals.signProposal));
+router.post('/proposals/:id/decline', ...tenant, h(proposals.declineProposal));
+
+// Invoices
+router.get('/invoices', ...tenant, h(invoices.listInvoices));
+router.get('/invoices/:id', ...tenant, h(invoices.getInvoice));
+router.post('/invoices', ...tenant, staff, h(invoices.createInvoice));
+router.post('/invoices/:id/mark-paid', ...tenant, staff, h(invoices.markPaid));
 
 module.exports = router;

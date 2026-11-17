@@ -7,6 +7,12 @@ const STYLES: Record<string, string> = {
   changes_requested: 'bg-orange-50 text-orange-700',
   approved: 'bg-green-50 text-green-700',
   completed: 'bg-green-50 text-green-700',
+  sent: 'bg-amber-50 text-amber-700',
+  signed: 'bg-green-50 text-green-700',
+  declined: 'bg-slate-100 text-slate-500',
+  unpaid: 'bg-amber-50 text-amber-700',
+  paid: 'bg-green-50 text-green-700',
+  overdue: 'bg-red-50 text-red-700',
   archived: 'bg-slate-100 text-slate-500',
 };
 
@@ -16,6 +22,7 @@ const LABELS: Record<string, string> = {
   awaiting_approval: 'Needs your approval',
   pending_approval: 'Needs your approval',
   changes_requested: 'Changes requested',
+  sent: 'Awaiting your signature',
 };
 
 export function StatusBadge({ status }: { status: string }) {
