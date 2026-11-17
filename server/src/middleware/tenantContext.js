@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { effectivePlan } = require('../utils/plans');
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -28,6 +29,7 @@ async function tenantContext(req, res, next) {
       organizationId: orgId,
       role: rows[0].role,
       planTier: rows[0].plan_tier,
+      plan: effectivePlan(rows[0].plan_tier, rows[0].subscription_status), // what limits actually apply
       subscriptionStatus: rows[0].subscription_status,
       trialEndsAt: rows[0].trial_ends_at,
     };

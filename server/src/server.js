@@ -21,6 +21,8 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization', 'x-organization-id'],
   })
 );
+// Webhook signature is computed over the exact raw bytes, so this must precede express.json().
+app.use('/api/webhooks/paddle', express.raw({ type: 'application/json', limit: '1mb' }));
 app.use(express.json({ limit: '100kb' }));
 
 app.use('/api', routes);

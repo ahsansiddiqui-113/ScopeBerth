@@ -144,3 +144,16 @@ ALTER TABLE proposals ADD COLUMN IF NOT EXISTS sent_at TIMESTAMPTZ;
 ALTER TABLE proposals ADD COLUMN IF NOT EXISTS declined_at TIMESTAMPTZ;
 ALTER TABLE invoices ADD COLUMN IF NOT EXISTS description TEXT;
 CREATE INDEX IF NOT EXISTS idx_proposals_org_client ON proposals(organization_id, client_user_id);
+
+-- ---- Phase 4 ----
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS custom_domain VARCHAR(255);
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS paddle_updated_at TIMESTAMPTZ; -- ignore stale/out-of-order webhooks
+CREATE UNIQUE INDEX IF NOT EXISTS idx_org_custom_domain ON organizations (LOWER(custom_domain)) WHERE custom_domain IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_org_paddle_sub ON organizations (paddle_subscription_id);
+
+-- Paddle webhook idempotency: each event is processed at most once.
+CREATE TABLE IF NOT EXISTS paddle_events (
+    event_id VARCHAR(100) PRIMARY KEY,
+    event_type VARCHAR(100) NOT NULL,
+    received_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);

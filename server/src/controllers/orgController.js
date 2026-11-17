@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { PLANS } = require('../utils/plans');
 const { slugify, HttpError } = require('../utils/helpers');
 
 const RESERVED_SLUGS = new Set(['app', 'www', 'api', 'portal', 'admin', 'login', 'static', 'assets']);
@@ -65,7 +66,14 @@ exports.getCurrentOrg = async (req, res) => {
 
 // PATCH /api/orgs/current  { name?, brandColor?, logoUrl? }  — owner only
 exports.updateCurrentOrg = async (req, res) => {
-  const { name, brandColor, logoUrl } = req.body;
+  const { name, brandColor, logoUrl, customDomain } = req.body;
+  const DOMAIN_RE = /^(?=.{4,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
+  if (customDomain !== undefined && customDomain !== null) {
+    if (!PLANS[req.tenant.plan].features.customDomain)
+      return res.status(402).json({ error: 'Custom domains are available on the Agency plan.', code: 'PLAN_FEATURE', feature: 'customDomain' });
+    if (typeof customDomain !== 'string' || !DOMAIN_RE.test(customDomain.toLowerCase()))
+      throw new HttpError(400, 'customDomain must be a hostname like portal.youragency.com');
+  }
   if (name !== undefined && (typeof name !== 'string' || !name.trim() || name.length > 255))
     throw new HttpError(400, 'Invalid name');
   if (brandColor !== undefined && !HEX_COLOR.test(brandColor))
@@ -77,11 +85,16 @@ exports.updateCurrentOrg = async (req, res) => {
     `UPDATE organizations
         SET name = COALESCE($1, name),
             brand_color = COALESCE($2, brand_color),
-            logo_url = CASE WHEN $3::boolean THEN $4 ELSE logo_url END
-      WHERE id = $5
-      RETURNING id, name, slug, logo_url, brand_color, plan_tier, subscription_status, trial_ends_at`,
-    [name?.trim() ?? null, brandColor ?? null, logoUrl !== undefined, logoUrl ?? null, req.tenant.organizationId]
-  );
+            logo_url = CASE WHEN $3::boolean THEN $4 ELSE logo_url END,
+            custom_domain = CASE WHEN $5::boolean THEN $6 ELSE custom_domain END
+      WHERE id = $7
+      RETURNING id, name, slug, logo_url, brand_color, plan_tier, subscription_status, trial_ends_at, custom_domain AS "customDomain"`,
+    [name?.trim() ?? null, brandColor ?? null, logoUrl !== undefined, logoUrl ?? null,
+     customDomain !== undefined, customDomain ? customDomain.toLowerCase() : null, req.tenant.organizationId]
+  ).catch((err) => {
+    if (err.code === '23505') throw new HttpError(409, 'That domain is already in use');
+    throw err;
+  });
   res.json({ organization: rows[0] });
 };
 
@@ -90,7 +103,7 @@ exports.updateCurrentOrg = async (req, res) => {
 exports.getPublicBranding = async (req, res) => {
   const { rows } = await pool.query(
     `SELECT name, slug, logo_url AS "logoUrl", brand_color AS "brandColor",
-            (plan_tier = 'agency' AND subscription_status = 'active') AS "whiteLabel"
+            (plan_tier = 'agency' AND subscription_status IN ('active', 'past_due')) AS "whiteLabel"
        FROM organizations WHERE slug = $1`,
     [String(req.params.slug).toLowerCase()]
   );
