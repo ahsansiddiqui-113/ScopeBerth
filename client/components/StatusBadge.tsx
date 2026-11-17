@@ -25,8 +25,8 @@ const LABELS: Record<string, string> = {
   sent: 'Awaiting your signature',
 };
 
-export function StatusBadge({ status }: { status: string }) {
-  const label = LABELS[status] ?? status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ');
+export function StatusBadge({ status, label: override }: { status: string; label?: string }) {
+  const label = override ?? LABELS[status] ?? status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ');
   return (
     <span className={`inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${STYLES[status] ?? STYLES.pending}`}>
       {label}
@@ -37,5 +37,10 @@ export function StatusBadge({ status }: { status: string }) {
 export const formatDate = (d: string | null) =>
   d ? new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : null;
 
-export const formatBytes = (n: number | null) =>
-  n == null ? '' : n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`;
+export const formatBytes = (n: number | null) => {
+  if (n == null) return '';
+  if (n === 0) return '0 KB';
+  if (n < 1024 * 1024) return `${Math.max(1, Math.round(n / 1024))} KB`;
+  if (n < 1024 ** 3) return `${(n / 1024 / 1024).toFixed(1)} MB`;
+  return `${+(n / 1024 ** 3).toFixed(1)} GB`;
+};

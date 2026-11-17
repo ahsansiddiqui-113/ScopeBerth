@@ -2,7 +2,7 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 const TOKEN_KEY = 'sf_token';
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(public status: number, message: string, public code?: string) {
     super(message);
   }
 }
@@ -28,7 +28,7 @@ export async function api<T>(
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError(res.status, data.error || 'Something went wrong');
+  if (!res.ok) throw new ApiError(res.status, data.error || 'Something went wrong', data.code);
   return data as T;
 }
 
@@ -66,3 +66,22 @@ export type Invoice = {
 
 export const money = (amount: string | number, currency = 'USD') =>
   new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(Number(amount));
+
+export const ORG_KEY = 'sf_org';
+export type OrgRef = { id: string; name: string; slug: string; role: 'owner' | 'staff' | 'client'; logo_url?: string | null; brand_color?: string };
+export type ClientRow = { userId: string; email: string; fullName: string; companyName: string | null; createdAt: string; projectCount: number };
+export type TeamMember = { userId: string; email: string; fullName: string; role: 'owner' | 'staff' };
+export type Limits = { clients: number | null; projects: number | null; seats: number | null; storageBytes: number | null };
+export type Billing = {
+  plan: 'starter' | 'pro' | 'agency'; planTier: string; subscriptionStatus: string; trialEndsAt: string | null;
+  hasSubscription: boolean; customDomain: string | null; limits: Limits;
+  features: { customDomain: boolean; whiteLabel: boolean };
+  usage: { clients: number; projects: number; seats: number; storageBytes: number };
+  plans: { key: string; label: string; priceUsd: number; limits: Limits; features: { customDomain: boolean; whiteLabel: boolean } }[];
+};
+export type StaffProject = ProjectSummary & { clientUserId: string };
+export type InvoiceRow = Invoice & { clientName: string };
+export type ProposalRow = Proposal & { clientName: string };
+
+export const formatLimit = (n: number | null, noun: string) =>
+  n == null ? `Unlimited ${noun}s` : `${n} ${noun}${n === 1 ? '' : 's'}`;

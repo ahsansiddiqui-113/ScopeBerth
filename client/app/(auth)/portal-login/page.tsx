@@ -36,12 +36,10 @@ function PortalLogin() {
           method: 'POST', body: { token }, auth: false,
         });
         setToken(session);
-        let dest = orgSlug;
-        if (!dest) {
-          const me = await api<Me>('/auth/me');
-          dest = me.organizations[0]?.slug ?? null;
-        }
-        router.replace(dest ? `/portal/${dest}` : '/');
+        const me = await api<Me>('/auth/me');
+        const target = me.organizations.find((o) => o.slug === orgSlug) ?? me.organizations[0];
+        // Invited staff land on the dashboard; clients on the portal.
+        router.replace(!target ? '/' : target.role === 'client' ? `/portal/${target.slug}` : '/app');
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Sign-in failed');
         setState('idle');

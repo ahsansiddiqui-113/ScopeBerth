@@ -48,7 +48,7 @@ async function getUsage(orgId, db = pool) {
   return { clients: u.clients, projects: u.projects, seats: u.seats, storageBytes: Number(u.storageBytes) };
 }
 
-const NAMES = { clients: 'clients', projects: 'projects', seats: 'team seats', storageBytes: 'file storage' };
+const NAMES = { clients: ['client', 'clients'], projects: ['project', 'projects'], seats: ['team seat', 'team seats'], storageBytes: ['file storage', 'file storage'] };
 
 /**
  * Blocks (402) when adding `increment` of a resource would exceed the workspace's plan limit.
@@ -61,7 +61,7 @@ const requireLimit = (resource, increment = () => 1) => async (req, res, next) =
     const usage = await getUsage(req.tenant.organizationId);
     if (usage[resource] + increment(req) > limit) {
       return res.status(402).json({
-        error: `Your ${PLANS[req.tenant.plan].label} plan includes up to ${resource === 'storageBytes' ? `${limit / GB} GB of` : limit} ${NAMES[resource]}. Upgrade to add more.`,
+        error: `Your ${PLANS[req.tenant.plan].label} plan includes up to ${resource === 'storageBytes' ? `${limit / GB} GB of` : limit} ${NAMES[resource][limit === 1 ? 0 : 1]}. Upgrade to add more.`,
         code: 'PLAN_LIMIT', resource, limit, plan: req.tenant.plan,
       });
     }
